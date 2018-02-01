@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<Configuration status="warn" name="org.dbs.mydoc" packages="">
+	<Properties>
+		<Property name="baseDir">/var/log</Property>
+	</Properties>
+	<Appenders>
+		<RollingFile name="RollingFile" fileName="${baseDir}/app.log"
+			filePattern="${baseDir}/$${date:yyyy-MM}/app-%d{yyyy-MM-dd}.log.gz">
+			<PatternLayout>
+				<Pattern>%5p %d{ISO8601} [%t][%x] %c - %m%n</Pattern>
+			</PatternLayout>
+			<Policies>
+				<TimeBasedTriggeringPolicy />
+			</Policies>
+		</RollingFile>
+	</Appenders>
+	<Loggers>
+		<Root level="debug">
+			<AppenderRef ref="RollingFile" />
+		</Root>
+		<Root level="info">
+			<AppenderRef ref="RollingFile" />
+		</Root>
+		<Logger name="org.springframework" level="error">
+			<appender-ref ref="RollingFile" />
+		</Logger>
+	</Loggers>
+</Configuration>
