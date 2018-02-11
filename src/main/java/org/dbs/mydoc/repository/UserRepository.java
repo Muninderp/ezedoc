@@ -7,4 +7,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface UserRepository extends MongoRepository<DBUser, Integer> {
 
+	DBUser findByMobileNumber(String mobileNumber);
+
 }

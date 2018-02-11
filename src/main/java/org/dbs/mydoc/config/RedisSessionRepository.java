@@ -17,14 +17,19 @@ import org.codehaus.jackson.Version;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.module.SimpleModule;
 import org.dbs.mydoc.data.format.WSBody;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
 import redis.clients.jedis.Jedis;
+
 
 public class RedisSessionRepository {
 
@@ -48,6 +53,9 @@ public class RedisSessionRepository {
 	private static final String SESSION_CONST = "SESSION:";
 	private long SESSION_TIMEOUT = 0;
 	private String SESSION_TIMEUNIT = null;
+	
+	@Autowired
+	private Environment env;
 
 	private RestTemplate rest;
 
@@ -71,11 +79,11 @@ public class RedisSessionRepository {
 
 	@PostConstruct
 	public void init() throws Exception {
-		/*
-		 * if(!(StringUtils.isEmpty(env.getProperty("session.timeout")))){
-		 * SESSION_TIMEOUT = Long.parseLong(env.getProperty("session.timeout")); }
-		 * SESSION_TIMEUNIT=env.getProperty("session.timeoutunit");
-		 */
+		
+		  if(!(StringUtils.isEmpty(env.getProperty("session.timeout")))){
+		  SESSION_TIMEOUT = Long.parseLong(env.getProperty("session.timeout")); }
+		  SESSION_TIMEUNIT=env.getProperty("session.timeoutunit");
+		 
 	}
 
 	public RedisSessionRepository(RestTemplate restTemplate) {

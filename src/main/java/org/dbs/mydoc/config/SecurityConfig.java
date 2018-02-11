@@ -19,7 +19,9 @@ import javax.xml.bind.DatatypeConverter;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
@@ -27,7 +29,9 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.codec.Base64;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.AccessDeniedHandlerImpl;
 import org.springframework.security.web.csrf.CsrfFilter;
@@ -37,10 +41,14 @@ import org.springframework.security.web.header.writers.XXssProtectionHeaderWrite
 import org.springframework.security.web.header.writers.frameoptions.XFrameOptionsHeaderWriter;
 import org.springframework.security.web.header.writers.frameoptions.XFrameOptionsHeaderWriter.XFrameOptionsMode;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.session.data.redis.config.annotation.web.http.EnableRedisHttpSession;
+import org.springframework.session.web.http.HeaderHttpSessionStrategy;
+import org.springframework.session.web.http.HttpSessionStrategy;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
 @EnableWebSecurity
+@EnableRedisHttpSession
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 	private static final Logger LOGGER = LogManager.getLogger(SecurityConfig.class);
@@ -54,6 +62,17 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	private String disable_csrf_flag;
 
 	private final Keys keys = new Keys();
+	
+	
+	@Autowired
+	private Environment env;
+
+	
+	
+	  @Bean
+	    public HttpSessionStrategy httpSessionStrategy() {
+	        return new HeaderHttpSessionStrategy();
+	    }
 
 	@Autowired
 	public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
@@ -62,7 +81,18 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
-		http.exceptionHandling().accessDeniedPage("/403");
+		http.csrf().disable();
+		
+		/* http
+         .authorizeRequests()
+         .anyRequest().authenticated()
+         .and()
+         .requestCache()
+         .requestCache(new NullRequestCache())
+         .and()
+         .httpBasic();*/
+		
+		/*http.exceptionHandling().accessDeniedPage("/403");
 		http.authorizeRequests().antMatchers("/login**").permitAll();
 
 		http.formLogin().loginProcessingUrl("/login");
@@ -85,7 +115,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		} else {
 			http.csrf().disable().addFilterBefore(securityFilter(), CsrfFilter.class);
 		}
-		http.addFilterAfter(sessionFilter(), CsrfFilter.class);
+		http.addFilterAfter(sessionFilter(), CsrfFilter.class);*/
 	}
 
 	private Filter sessionFilter() {
@@ -114,7 +144,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 					obj = apiKey;
 				} else {
 
-					apiKey = keys.generateApiKey();// TODO : Need to change to get From Redis //
+					apiKey =  null;// TODO : Need to change to get From Redis //
 													// redisSessionRepository.getHttpSessionKey(request);
 
 					LOGGER.debug("Security Config request uri: " + request.getRequestURI() + " apikey from redis: "
@@ -131,7 +161,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 									new AccessDeniedException("Session has expired."));
 						}
 					}
-					// redisSessionRepository.setObject(apiKey, obj);
+					//redisSessionRepository.setObject(apiKey, obj);
 				}
 
 				// redisSessionRepository.setHttpResponse(response, apiKey);
@@ -197,7 +227,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 							return;
 						}
 						accessDeniedHandler.handle(request, response,
-								new AccessDeniedException("Missing or non-matching CSRF-token"));
+								new AccessDeniedException("Missing or non-matching CSRF-token"));// Need to check that Logic for CSRF Regenration.Need to generate it for evry request.
 						return;
 					} else if (request.getHeader(EXT_TOKEN) != null
 							&& request.getHeader(EXT_TOKEN).equals(EXT_TOKEN_VAL)) {
@@ -256,4 +286,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		}
 
 	}
+	
+	@Bean
+    public PasswordEncoder encoder() {
+        return new BCryptPasswordEncoder(11);
+    }
 }

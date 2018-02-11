@@ -11,6 +11,8 @@ public class User {
 	@NotNull
 	private String emailId;
 	@NotNull
+	private String password;
+	@NotNull
 	private String mobileNumber;
 	@NotNull
 	private String userType;
@@ -19,17 +21,6 @@ public class User {
 
 	public User() {
 		super();
-	}
-
-	public User(String firstName, String lastName, String emailId, String mobileNumber, String userType,
-			String practiceId) {
-		super();
-		this.firstName = firstName;
-		this.lastName = lastName;
-		this.emailId = emailId;
-		this.mobileNumber = mobileNumber;
-		this.userType = userType;
-		this.practiceId = practiceId;
 	}
 
 	public String getFirstName() {
@@ -54,6 +45,14 @@ public class User {
 
 	public void setEmailId(String emailId) {
 		this.emailId = emailId;
+	}
+
+	public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
 	}
 
 	public String getMobileNumber() {

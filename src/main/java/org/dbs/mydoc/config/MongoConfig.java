@@ -6,6 +6,7 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
 
 import com.mongodb.Mongo;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoURI;
 
 @Configuration
 @EnableMongoRepositories(basePackages = "org.dbs.mydoc.repository")
@@ -13,12 +14,16 @@ public class MongoConfig extends AbstractMongoConfiguration {
 
 	@Override
 	protected String getDatabaseName() {
-		return "myDOC_DB";
+		return "mydoc_db";
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public Mongo mongo() throws Exception {
-		return new MongoClient("127.0.0.1", 27017);
+		@SuppressWarnings("deprecation")
+		MongoURI uri = new MongoURI("mongodb://amrendra_db:testmongo@ds117913.mlab.com:17913/mydoc_db");
+
+		return new Mongo(uri);
 	}
 
 	@Override

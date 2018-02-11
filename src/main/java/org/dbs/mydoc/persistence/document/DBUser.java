@@ -12,6 +12,7 @@ public class DBUser {
 	private String lastName;
 	private String emailId;
 	private String mobileNumber;
+	private String password;
 	private String userType;
 	private String practiceId;
 
@@ -53,6 +54,14 @@ public class DBUser {
 
 	public void setMobileNumber(String mobileNumber) {
 		this.mobileNumber = mobileNumber;
+	}
+
+	public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
 	}
 
 	public String getUserType() {
