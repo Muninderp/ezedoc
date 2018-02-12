@@ -82,6 +82,11 @@
 			<artifactId>log4j-core</artifactId>
 			<version>2.7</version>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpcore</artifactId>
+			<version>4.3.3</version>
+		</dependency>
 		<!-- Java Json libraries -->
 		<dependency>
 			<groupId>org.codehaus.jackson</groupId>
@@ -148,10 +153,7 @@
 							<mainClass>org.dbs.mydoc.MydocApplication</mainClass>
 						</manifest>
 					</archive>
-					<processTypes>
-						<web>java $JAVA_OPTS -cp target/classes:target/dependency/* Main</web>
-					</processTypes>
-					<appName>mydoc-backend</appName>
+
 				</configuration>
 			</plugin>
 
@@ -159,6 +161,12 @@
 				<groupId>com.heroku.sdk</groupId>
 				<artifactId>heroku-maven-plugin</artifactId>
 				<version>2.0.3</version>
+				<configuration>
+					<processTypes>
+						<web>java -cp -Dserver.port=$PORT target/classes/;target/dependency/* org.dbs.mydoc.MydocApplication</web>
+					</processTypes>
+					<appName>mydoc-backend</appName>
+				</configuration>
 			</plugin>
 			<!-- Copy project dependency -->
 			<plugin>
