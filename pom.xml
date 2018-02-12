@@ -166,7 +166,7 @@
 				<version>2.0.3</version>
 				<configuration>
 					<processTypes>
-						<web>java -Dserver.port=$PORT -jar target\myDoc.jar</web>
+						<web>java -Dserver.port=$PORT -jar target/myDoc.jar</web>
 					</processTypes>
 					<appName>mydoc-backend</appName>
 				</configuration>
