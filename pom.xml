@@ -25,11 +25,12 @@
 	</properties>
 
 	<dependencies>
-		<dependency>
+		<!-- <dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
-		</dependency>
+		</dependency> -->
 
+    
 		<dependency>
 			<groupId>org.springframework.data</groupId>
 			<artifactId>spring-data-mongodb</artifactId>
@@ -150,7 +151,9 @@
 					<archive>
 						<manifest>
 							<!-- Jar file entry point -->
-							<mainClass>org.dbs.mydoc.MydocApplication</mainClass>
+							<addClasspath>true</addClasspath>
+					    	<mainClass>org.dbs.mydoc.MydocApplication</mainClass>
+							<classpathPrefix>dependency-jars/</classpathPrefix>
 						</manifest>
 					</archive>
 
@@ -163,7 +166,7 @@
 				<version>2.0.3</version>
 				<configuration>
 					<processTypes>
-						<web>java -cp -Dserver.port=$PORT target/classes/;target/dependency/* org.dbs.mydoc.MydocApplication</web>
+						<web>java -Dserver.port=$PORT -jar target\myDoc.jar</web>
 					</processTypes>
 					<appName>mydoc-backend</appName>
 				</configuration>
