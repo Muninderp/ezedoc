@@ -15,6 +15,8 @@ public class DBUser {
 	private String password;
 	private String userType;
 	private String practiceId;
+	private String notificationId;
+	private String specialization;
 
 	public long getId() {
 		return id;
@@ -80,4 +82,21 @@ public class DBUser {
 		this.practiceId = practiceId;
 	}
 
+	public String getNotificationId() {
+		return notificationId;
+	}
+
+	public void setNotificationId(String notificationId) {
+		this.notificationId = notificationId;
+	}
+
+	public String getSpecialization() {
+		return specialization;
+	}
+
+	public void setSpecialization(String specialization) {
+		this.specialization = specialization;
+	}
+
+	
 }

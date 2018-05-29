@@ -13,6 +13,8 @@ public class DBPatient {
 	private String mobileNumber;
 	private String location;
 	private String addedBy;
+	private Integer age;
+	private String gender;
 
 	public long getId() {
 		return id;
@@ -60,6 +62,22 @@ public class DBPatient {
 
 	public void setAddedBy(String addedBy) {
 		this.addedBy = addedBy;
+	}
+
+	public Integer getAge() {
+		return age;
+	}
+
+	public void setAge(Integer age) {
+		this.age = age;
+	}
+
+	public String getGender() {
+		return gender;
+	}
+
+	public void setGender(String gender) {
+		this.gender = gender;
 	}
 
 }

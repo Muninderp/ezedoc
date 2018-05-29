@@ -1,57 +1,31 @@
 package org.dbs.mydoc.config;
 
-/*@Configuration
-@EnableWebMvc
-@EnableAspectJAutoProxy(proxyTargetClass = true)
-@EnableTransactionManagement
-@ComponentScan("org.dbs.mydoc")
+import org.springframework.context.MessageSource;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.support.ReloadableResourceBundleMessageSource;
+import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+
+@Configuration
 public class MyDocConfig extends WebMvcConfigurerAdapter {
 
 	@Bean
-	public RedisSessionRepository redisSessionRepository(RestTemplate restTemplate, Environment enviroment) {
-		RedisSessionRepository redisSessionRepository = new RedisSessionRepository(restTemplate);
-		redisSessionRepository.setUrltoGet(enviroment.getProperty("get_cache_url"), HttpMethod.GET);
-		redisSessionRepository.setUrltoPut(enviroment.getProperty("put_cache_url"), HttpMethod.POST);
-		redisSessionRepository.setUrltoDelete(enviroment.getProperty("remove_cache_url"), HttpMethod.DELETE);
-		return redisSessionRepository;
-	}
-	
-	
-	@Bean
-	public PoolingHttpClientConnectionManager poolingHttpClientConnectionManager(){
-		PoolingHttpClientConnectionManager poolingHttpClientConnectionManager = new PoolingHttpClientConnectionManager();
-		poolingHttpClientConnectionManager.setMaxTotal(100);
-		return poolingHttpClientConnectionManager;
-	}
-	
-	
-	@Bean(destroyMethod="close")
-	public CloseableHttpClient httpClient(PoolingHttpClientConnectionManager poolingHttpClientConnectionManager) {
-		return null;       //custom().setConnectionManager(poolingHttpClientConnectionManager).build();
+	public MessageSource messageSource() {
+		ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();
+		messageSource.setBasename("classpath:messages");
+		messageSource.setDefaultEncoding("UTF-8");
+		return messageSource;
 	}
 
 	@Bean
-	public HttpComponentsClientHttpRequestFactory httpComponentsClientHttpRequestFactory(
-	        CloseableHttpClient httpClient) {
-		return new HttpComponentsClientHttpRequestFactory(httpClient);
+	public LocalValidatorFactoryBean validator() {
+		LocalValidatorFactoryBean bean = new LocalValidatorFactoryBean();
+		bean.setValidationMessageSource(messageSource());
+		return bean;
 	}
-	
 
-	*//**
-	 * RestClient to access another rest web services
-	 * 
-	 * @param requestFactory
-	 * @param errorHandler
-	 * @return
-	 *//*
-	@Bean
-	public RestTemplate restTemplate(HttpComponentsClientHttpRequestFactory requestFactory,
-			ResponseErrorHandler errorHandler) {
-		RestTemplate restTemplate = new RestTemplate(requestFactory);
-		restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
-		restTemplate.getMessageConverters().add(new StringHttpMessageConverter());
-		restTemplate.setErrorHandler(errorHandler);
-		return restTemplate;
-	}*/
-	
-//}
+}

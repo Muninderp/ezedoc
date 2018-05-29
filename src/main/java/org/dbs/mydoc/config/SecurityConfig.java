@@ -22,6 +22,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
@@ -41,14 +43,10 @@ import org.springframework.security.web.header.writers.XXssProtectionHeaderWrite
 import org.springframework.security.web.header.writers.frameoptions.XFrameOptionsHeaderWriter;
 import org.springframework.security.web.header.writers.frameoptions.XFrameOptionsHeaderWriter.XFrameOptionsMode;
 import org.springframework.security.web.util.matcher.RequestMatcher;
-import org.springframework.session.data.redis.config.annotation.web.http.EnableRedisHttpSession;
-import org.springframework.session.web.http.HeaderHttpSessionStrategy;
-import org.springframework.session.web.http.HttpSessionStrategy;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
 @EnableWebSecurity
-@EnableRedisHttpSession
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 	private static final Logger LOGGER = LogManager.getLogger(SecurityConfig.class);
@@ -62,42 +60,42 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	private String disable_csrf_flag;
 
 	private final Keys keys = new Keys();
+
+	@Autowired
+	private RedisTemplate<Object, Object> redisTemplate;
+
+	private HashOperations hashOperations;
+
 	
-	
+
 	@Autowired
 	private Environment env;
 
-	
-	
-	  @Bean
-	    public HttpSessionStrategy httpSessionStrategy() {
-	        return new HeaderHttpSessionStrategy();
-	    }
+	/*@Bean
+	public HttpSessionStrategy httpSessionStrategy() {
+		return new HeaderHttpSessionStrategy();
+	}*/
 
 	@Autowired
 	public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
 		auth.inMemoryAuthentication().withUser("admin").password("password").roles("ADMIN");
+		
 	}
 
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
 		http.csrf().disable();
-		
-		/* http
-         .authorizeRequests()
-         .anyRequest().authenticated()
-         .and()
-         .requestCache()
-         .requestCache(new NullRequestCache())
-         .and()
-         .httpBasic();*/
-		
-		/*http.exceptionHandling().accessDeniedPage("/403");
+		hashOperations = redisTemplate.opsForHash();   
+		/*
+		 * http .authorizeRequests() .anyRequest().authenticated() .and()
+		 * .requestCache() .requestCache(new NullRequestCache()) .and() .httpBasic();
+		 */
+
+		http.exceptionHandling().accessDeniedPage("/403");
 		http.authorizeRequests().antMatchers("/login**").permitAll();
 
 		http.formLogin().loginProcessingUrl("/login");
-		http.logout().logoutSuccessUrl("/logout");
-		// header protection
+		http.logout().logoutSuccessUrl("/logout"); // header protection
 		http.headers().addHeaderWriter(new XFrameOptionsHeaderWriter(XFrameOptionsMode.SAMEORIGIN))
 				.addHeaderWriter(new XContentTypeOptionsHeaderWriter())
 				.addHeaderWriter(new XXssProtectionHeaderWriter()).addHeaderWriter(new HstsHeaderWriter());
@@ -115,8 +113,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		} else {
 			http.csrf().disable().addFilterBefore(securityFilter(), CsrfFilter.class);
 		}
-		http.addFilterAfter(sessionFilter(), CsrfFilter.class);*/
-	}
+		http.addFilterAfter(sessionFilter(), CsrfFilter.class);
+       	}
 
 	private Filter sessionFilter() {
 		return new OncePerRequestFilter() {
@@ -128,7 +126,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 				LOGGER.debug("Printing the request::::::::::");
 				printRequest(request);
 
-				String apiKey = null;
+				String apiKey = request.getHeader("auth-api-key");
 				Object obj = null;
 				if (request.getRequestURI().contains("/login") || request.getRequestURI().contains("/forgotpassword")
 						|| (/*
@@ -144,8 +142,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 					obj = apiKey;
 				} else {
 
-					apiKey =  null;// TODO : Need to change to get From Redis //
-													// redisSessionRepository.getHttpSessionKey(request);
+					apiKey = (String) hashOperations.get("auth-api-key", apiKey);// TODO : Need to change to get From Redis //
+					// redisSessionRepository.getHttpSessionKey(request);
 
 					LOGGER.debug("Security Config request uri: " + request.getRequestURI() + " apikey from redis: "
 							+ apiKey);
@@ -161,10 +159,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 									new AccessDeniedException("Session has expired."));
 						}
 					}
-					//redisSessionRepository.setObject(apiKey, obj);
+					
+					hashOperations.put("auth-api-key", apiKey, apiKey);
+					// redisSessionRepository.setObject(apiKey, obj);
 				}
 
 				// redisSessionRepository.setHttpResponse(response, apiKey);
+				hashOperations.put("auth-api-key", apiKey, apiKey);
+				
 				response.setHeader("auth-api-key", apiKey);
 
 				filterChain.doFilter(request, response);
@@ -204,6 +206,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 				String csrfToken = request.getHeader(X_CSRF_TOKEN);
 				if (request.getRequestURI().contains("/login") || request.getRequestURI().contains("/forgotpassword")
 						|| request.getRequestURI().contains("/api/")
+						|| request.getRequestURI().contains("/register")
 						|| request.getRequestURI().contains("/verifyaccount")
 						|| request.getRequestURI().contains("/validatemail/")
 						|| request.getRequestURI().contains("/signup/verifymobilenumber")
@@ -215,7 +218,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 					// Generate Csrf Token
 					csrfToken = keys.generateCrsfToken();
 				} else {
-					String redisToken = (String) "123456";// redisSessionRepository.getObject(csrfToken);
+					String redisToken = (String) hashOperations.get("csrftoken", csrfToken);
+					;// redisSessionRepository.getObject(csrfToken);
 
 					if (null == redisToken) {
 						if (null == disable_csrf_flag) {
@@ -227,7 +231,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 							return;
 						}
 						accessDeniedHandler.handle(request, response,
-								new AccessDeniedException("Missing or non-matching CSRF-token"));// Need to check that Logic for CSRF Regenration.Need to generate it for evry request.
+								new AccessDeniedException("Missing or non-matching CSRF-token"));// Need to check that
+																									// Logic for CSRF
+																									// Regenration.Need
+																									// to generate it
+																									// for evry request.
 						return;
 					} else if (request.getHeader(EXT_TOKEN) != null
 							&& request.getHeader(EXT_TOKEN).equals(EXT_TOKEN_VAL)) {
@@ -242,6 +250,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 					}
 				}
+				csrfToken = keys.generateCrsfToken();
+				hashOperations.put("csrftoken", csrfToken, csrfToken);
 				// redisSessionRepository.setObject(csrfToken, csrfToken);
 				// String csrfEncrypt = ApiTokenSecurity.encrypt(csrfToken);
 				response.setHeader(X_CSRF_TOKEN, csrfToken);
@@ -286,9 +296,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		}
 
 	}
-	
+
 	@Bean
-    public PasswordEncoder encoder() {
-        return new BCryptPasswordEncoder(11);
-    }
+	public PasswordEncoder encoder() {
+		return new BCryptPasswordEncoder(11);
+	}
 }
