@@ -1,10 +1,12 @@
 package org.dbs.mydoc.persistence.document;
 
-import java.sql.Timestamp;
+import java.util.Date;
 import java.util.List;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.format.annotation.DateTimeFormat.ISO;
 
 @Document
 public class DBConsultation {
@@ -21,10 +23,12 @@ public class DBConsultation {
 	private String status;
 
 	private List<String> documentUrl;
-
-	private Timestamp consultationDate;
-
-	private Timestamp updatedDate;
+	
+	@DateTimeFormat(iso = ISO.DATE_TIME)
+	private Date consultationDate;
+	
+	@DateTimeFormat(iso = ISO.DATE_TIME)
+	private Date updatedDate;
 
 	public String getConsultationId() {
 		return consultationId;
@@ -74,20 +78,21 @@ public class DBConsultation {
 		this.documentUrl = documentUrl;
 	}
 
-	public Timestamp getConsultationDate() {
+	public Date getConsultationDate() {
 		return consultationDate;
 	}
 
-	public void setConsultationDate(Timestamp consultationDate) {
+	public void setConsultationDate(Date consultationDate) {
 		this.consultationDate = consultationDate;
 	}
 
-	public Timestamp getUpdatedDate() {
+	public Date getUpdatedDate() {
 		return updatedDate;
 	}
 
-	public void setUpdatedDate(Timestamp updatedDate) {
+	public void setUpdatedDate(Date updatedDate) {
 		this.updatedDate = updatedDate;
 	}
 
+	
 }

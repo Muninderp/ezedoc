@@ -1,8 +1,11 @@
 package org.dbs.mydoc.business.entity;
 
+import java.util.Date;
 import java.util.List;
 
 import javax.validation.constraints.NotNull;
+
+import org.dbs.mydoc.persistence.document.DBPatient;
 
 public class ConsultationDetail {
 
@@ -21,9 +24,11 @@ public class ConsultationDetail {
 
 	private List<String> documentUrl;
 
-	private String consultationDate;
+	private Date consultationDate;
 
-	private String updatedDate;
+	private Date updatedDate;
+
+	private DBPatient patient;
 
 	public String getConsultationId() {
 		return consultationId;
@@ -73,20 +78,28 @@ public class ConsultationDetail {
 		this.documentUrl = documentUrl;
 	}
 
-	public String getConsultationDate() {
+	public Date getConsultationDate() {
 		return consultationDate;
 	}
 
-	public void setConsultationDate(String consultationDate) {
+	public void setConsultationDate(Date consultationDate) {
 		this.consultationDate = consultationDate;
 	}
 
-	public String getUpdatedDate() {
+	public Date getUpdatedDate() {
 		return updatedDate;
 	}
 
-	public void setUpdatedDate(String updatedDate) {
+	public void setUpdatedDate(Date updatedDate) {
 		this.updatedDate = updatedDate;
+	}
+
+	public DBPatient getPatient() {
+		return patient;
+	}
+
+	public void setPatient(DBPatient patient) {
+		this.patient = patient;
 	}
 
 }

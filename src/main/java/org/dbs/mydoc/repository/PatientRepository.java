@@ -9,4 +9,6 @@ import org.springframework.stereotype.Repository;
 public interface PatientRepository extends MongoRepository<DBPatient, Integer> {
 
 	DBPatient findByMobileNumber(String mobileNumber);
+
+	DBPatient findById(String id);
 }

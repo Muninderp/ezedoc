@@ -1,7 +1,12 @@
 package org.dbs.mydoc.controller;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 
 import org.apache.log4j.Logger;
@@ -18,13 +23,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.FileCopyUtils;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
-
-import com.mongodb.DB;
 
 @Controller
 public class PatientController {
@@ -37,6 +43,7 @@ public class PatientController {
 	@Autowired
 	private ConsultationRepository consultationRepository;
 
+	@Autowired
 	private AmazonClient amazonClient;
 
 	@ResponseBody
@@ -53,7 +60,7 @@ public class PatientController {
 			return new ResponseEntity<MyDocAPIResponseInfo>(myDocAPIResponseInfo, HttpStatus.BAD_REQUEST);
 		}
 		try {
-			dbPatient.setId(new ObjectId().getCounter());
+
 			dbPatient.setFirstName(patient.getFirstName());
 			dbPatient.setLastName(patient.getLastName());
 			dbPatient.setLocation(patient.getLocation());
@@ -74,15 +81,15 @@ public class PatientController {
 	}
 
 	@ResponseBody
-	@RequestMapping(value = "getallpatient", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+	@RequestMapping(value = "/mydoc/patient/getallpatient", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
 	public List<DBPatient> getAll() {
 		return patientRepository.findAll();
 	}
 
 	@ResponseBody
-	@RequestMapping(value = "mydoc/patient/upload", method = RequestMethod.POST, consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<MyDocAPIResponseInfo> uploadConsulationFile(String consultationId,
-			MultipartFile multipartFile) {
+	@PostMapping("mydoc/patient/uploadDoc")
+	public ResponseEntity<MyDocAPIResponseInfo> uploadConsulationFile(
+			@RequestParam("consultationId") String consultationId, @RequestParam("files") MultipartFile[] files) {
 
 		MyDocAPIResponseInfo myDocAPIResponseInfo = new MyDocAPIResponseInfo();
 		String s3Url = null;
@@ -91,8 +98,17 @@ public class PatientController {
 			try {
 				DBConsultation dBConsultation = consultationRepository.findByConsultationId(consultationId);
 				if (dBConsultation != null) {
-					s3Url = amazonClient.uploadFile(multipartFile);
-					dBConsultation.getDocumentUrl().add(s3Url);
+					for (MultipartFile file : files) {
+						s3Url = amazonClient.uploadFile(file);
+						if (dBConsultation.getDocumentUrl() == null) {
+							List<String> documentUrl = new ArrayList<String>();
+							documentUrl.add(s3Url);
+							dBConsultation.setDocumentUrl(documentUrl);
+
+						} else {
+							dBConsultation.getDocumentUrl().add(s3Url);
+						}
+					}
 					consultationRepository.save(dBConsultation);
 				}
 			} catch (Exception e) {
@@ -107,6 +123,18 @@ public class PatientController {
 		myDocAPIResponseInfo.setDescription("Document uploaded Succesfully");
 		myDocAPIResponseInfo.setData(s3Url);
 		return new ResponseEntity<MyDocAPIResponseInfo>(myDocAPIResponseInfo, HttpStatus.OK);
+	}
+
+	@PostMapping(value = "mydoc/patient/download", consumes = MediaType.APPLICATION_JSON_VALUE)
+	public void downloadConsultationFile(@RequestBody HashMap<String, String> requestData, HttpServletResponse response)
+			throws IOException {
+		String fileUrl = requestData.get("fileUrl");
+		if (fileUrl != null) {
+			InputStream inputStream = amazonClient.downloadFile(fileUrl);
+			String fileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
+			response.setHeader("Content-Disposition", String.format("inline; filename=\"" + fileName + "\""));
+			FileCopyUtils.copy(inputStream, response.getOutputStream());
+		}
 	}
 
 	private boolean patientExist(String mobileNumber) {

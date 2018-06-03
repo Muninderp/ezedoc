@@ -1,7 +1,7 @@
 package org.dbs.mydoc.controller;
 
-import java.sql.Date;
-import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
@@ -15,12 +15,14 @@ import org.dbs.mydoc.business.entity.ConsultationDetail;
 import org.dbs.mydoc.business.entity.LoginDetails;
 import org.dbs.mydoc.business.entity.User;
 import org.dbs.mydoc.constant.ErrorConstant;
-import org.dbs.mydoc.constant.Specilisation;
+import org.dbs.mydoc.constant.Specilization;
 import org.dbs.mydoc.constant.UserType;
 import org.dbs.mydoc.data.format.MyDocAPIResponseInfo;
 import org.dbs.mydoc.persistence.document.DBConsultation;
+import org.dbs.mydoc.persistence.document.DBPatient;
 import org.dbs.mydoc.persistence.document.DBUser;
 import org.dbs.mydoc.repository.ConsultationRepository;
+import org.dbs.mydoc.repository.PatientRepository;
 import org.dbs.mydoc.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
@@ -48,6 +50,9 @@ public class UserController {
 	private PasswordEncoder passwordEncoder;
 
 	@Autowired
+	private PatientRepository patientRepository;
+
+	@Autowired
 	private RedisTemplate<String, String> redisTemplate;
 
 	@Autowired
@@ -72,7 +77,7 @@ public class UserController {
 			dbUser.setFirstName(user.getFirstName());
 			dbUser.setLastName(user.getLastName());
 			dbUser.setEmailId(user.getEmailId());
-			if (!EnumUtils.isValidEnum(Specilisation.class, user.getSpecialization())) {
+			if (!EnumUtils.isValidEnum(Specilization.class, user.getSpecialization())) {
 				LOGGER.error("Specialisation type Does not Exist");
 				myDocAPIResponseInfo.setCode(5001);
 				myDocAPIResponseInfo.setDescription("Specialization type Does not Exist");
@@ -117,7 +122,7 @@ public class UserController {
 					if (passwordEncoder.matches(loginDetails.getPassword(), dbUser.getPassword())) {
 						myDocAPIResponseInfo.setCode(0);
 						myDocAPIResponseInfo.setDescription("User Succesfully Logged In");
-						myDocAPIResponseInfo.setData(dbUser.getId());
+						myDocAPIResponseInfo.setData(dbUser);
 
 						return new ResponseEntity<MyDocAPIResponseInfo>(myDocAPIResponseInfo, HttpStatus.OK);
 
@@ -161,14 +166,13 @@ public class UserController {
 	@ResponseBody
 	@RequestMapping(value = "mydoc/users/logout", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<MyDocAPIResponseInfo> logout(@Valid String sessionID, HttpServletRequest request) {
-		DBUser dbUser = null;
+
 		hashOperations = redisTemplate.opsForHash();
-		hashOperations.delete(request.getHeader("auth-api-key"), request.getHeader("auth-api-key"));
+		Long l = hashOperations.delete("auth-api-key", request.getHeader("auth-api-key"));
 		MyDocAPIResponseInfo myDocAPIResponseInfo = new MyDocAPIResponseInfo();
 		myDocAPIResponseInfo.setCode(0);
 		myDocAPIResponseInfo.setData("Success");
 		return new ResponseEntity<MyDocAPIResponseInfo>(myDocAPIResponseInfo, HttpStatus.OK);
-
 	}
 
 	@ResponseBody
@@ -217,7 +221,6 @@ public class UserController {
 		MyDocAPIResponseInfo myDocAPIResponseInfo = new MyDocAPIResponseInfo();
 		try {
 			dbUser = userRepository.findByMobileNumber(mobileNumber);
-
 			if (dbUser == null) {
 				myDocAPIResponseInfo.setCode(ErrorConstant.BAD_REQUEST);
 				myDocAPIResponseInfo.setDescription("There is no account with that mobile Number : " + mobileNumber);
@@ -232,7 +235,6 @@ public class UserController {
 			myDocAPIResponseInfo.setData(null);
 			return new ResponseEntity<MyDocAPIResponseInfo>(myDocAPIResponseInfo, HttpStatus.INTERNAL_SERVER_ERROR);
 		}
-
 		myDocAPIResponseInfo.setCode(0);
 		myDocAPIResponseInfo.setDescription("Success");
 		HashMap<String, String> result = new HashMap<String, String>();
@@ -242,21 +244,47 @@ public class UserController {
 	}
 
 	@ResponseBody
+	@RequestMapping(value = "mydoc/users/getDoctorsBySpeciality", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<MyDocAPIResponseInfo> getDoctorsBySpeciality(
+			@RequestParam("specialization") String specialization) {
+		List<DBUser> dbUsers = null;
+		MyDocAPIResponseInfo myDocAPIResponseInfo = new MyDocAPIResponseInfo();
+		try {
+			if (!EnumUtils.isValidEnum(Specilization.class, specialization)) {
+				LOGGER.error("Specialisation type Does not Exist");
+				myDocAPIResponseInfo.setCode(5001);
+				myDocAPIResponseInfo.setDescription("Specialization type Does not Exist");
+				myDocAPIResponseInfo.setData(null);
+				return new ResponseEntity<MyDocAPIResponseInfo>(myDocAPIResponseInfo, HttpStatus.BAD_REQUEST);
+			}
+			dbUsers = userRepository.findBySpecialization(specialization);
+
+		} catch (Exception e) {
+			myDocAPIResponseInfo.setCode(5000);
+			myDocAPIResponseInfo.setDescription("Error in Processing Request");
+			myDocAPIResponseInfo.setData(null);
+			return new ResponseEntity<MyDocAPIResponseInfo>(myDocAPIResponseInfo, HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		myDocAPIResponseInfo.setCode(0);
+		myDocAPIResponseInfo.setDescription("Success");
+		myDocAPIResponseInfo.setData(dbUsers);
+		return new ResponseEntity<MyDocAPIResponseInfo>(myDocAPIResponseInfo, HttpStatus.OK);
+	}
+
+	@ResponseBody
 	@RequestMapping(value = "mydoc/users/createConsultation", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<MyDocAPIResponseInfo> createConsultation(
 			@Valid @RequestBody ConsultationDetail consultationDetail) {
-
 		DBConsultation dbConsultation = null;
 		MyDocAPIResponseInfo myDocAPIResponseInfo = new MyDocAPIResponseInfo();
 		try {
-
 			dbConsultation = new DBConsultation();
 			dbConsultation.setDoctorId(consultationDetail.getDoctorId());
 			dbConsultation.setHealthWorkerId(consultationDetail.getHealthWorkerId());
 			dbConsultation.setPatientId(consultationDetail.getPatientId());
 			dbConsultation.setStatus("active");
-			dbConsultation.setConsultationDate(new Timestamp(System.currentTimeMillis()));
-			dbConsultation.setUpdatedDate(new Timestamp(System.currentTimeMillis()));
+			dbConsultation.setConsultationDate(new Date());
+			dbConsultation.setUpdatedDate(new Date());
 			consultationRepository.save(dbConsultation);
 
 		} catch (Exception e) {
@@ -273,11 +301,12 @@ public class UserController {
 	}
 
 	@ResponseBody
-	@RequestMapping(value = "mydoc/users/getConsulationDetailsForUser", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<MyDocAPIResponseInfo> getConsulationDetailsForUser(@RequestParam("mobileNumber") String mobileNumber) {
+	@RequestMapping(value = "mydoc/users/getConsultationDetailsForUser", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<MyDocAPIResponseInfo> getConsulationDetailsForUser(
+			@RequestParam("mobileNumber") String mobileNumber) {
 		DBUser dbUser = null;
-		String notificationId = null;
-		List<DBConsultation> consulations = null;
+		List<DBConsultation> consultations = null;
+		List<ConsultationDetail> consultationDetails = new ArrayList();
 		MyDocAPIResponseInfo myDocAPIResponseInfo = new MyDocAPIResponseInfo();
 		try {
 			dbUser = userRepository.findByMobileNumber(mobileNumber);
@@ -289,11 +318,27 @@ public class UserController {
 			} else {
 				if (dbUser.getUserType().equals(UserType.doctor.toString())) {
 
-					consulations = consultationRepository.findByDoctorId(dbUser.getPracticeId());
+					consultations = consultationRepository.findByDoctorId(dbUser.getPracticeId());
 				} else {
-					consulations = consultationRepository.findByHealthWorkerId(dbUser.getPracticeId());
+					consultations = consultationRepository.findByHealthWorkerId(dbUser.getPracticeId());
 				}
 			}
+
+			for (DBConsultation consultation : consultations) {
+				DBPatient patient = patientRepository.findById(consultation.getPatientId());
+				ConsultationDetail consultationDetail = new ConsultationDetail();
+				consultationDetail.setConsultationId(consultation.getConsultationId());
+				consultationDetail.setConsultationDate(consultation.getConsultationDate());
+				consultationDetail.setUpdatedDate(consultation.getUpdatedDate());
+				consultationDetail.setDoctorId(consultation.getDoctorId());
+				consultationDetail.setDocumentUrl(consultation.getDocumentUrl());
+				consultationDetail.setHealthWorkerId(consultation.getHealthWorkerId());
+				consultationDetail.setPatientId(consultation.getPatientId());
+				consultationDetail.setStatus(consultation.getStatus());
+				consultationDetail.setPatient(patient);
+				consultationDetails.add(consultationDetail);
+			}
+
 		} catch (Exception e) {
 			myDocAPIResponseInfo.setCode(5000);
 			myDocAPIResponseInfo.setDescription("Error in Processing Request");
@@ -303,33 +348,26 @@ public class UserController {
 
 		myDocAPIResponseInfo.setCode(0);
 		myDocAPIResponseInfo.setDescription("Success");
-		myDocAPIResponseInfo.setData(consulations);
+		myDocAPIResponseInfo.setData(consultationDetails);
 		return new ResponseEntity<MyDocAPIResponseInfo>(myDocAPIResponseInfo, HttpStatus.OK);
 	}
-
-	
 
 	@ResponseBody
-	@RequestMapping(value = "mydoc/users/updateConsulationDetailsForUser", method = RequestMethod.POST,consumes=MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<MyDocAPIResponseInfo> updateConsulationDetailsForUser(@RequestParam("mobileNumber") String mobileNumber) {
-		DBUser dbUser = null;
-		String notificationId = null;
-		List<DBConsultation> consulations = null;
+	@RequestMapping(value = "mydoc/users/updateConsultationDetail", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<MyDocAPIResponseInfo> updateConsulationDetailsForUser(
+			@RequestBody HashMap<String, String> requestData) {
 		MyDocAPIResponseInfo myDocAPIResponseInfo = new MyDocAPIResponseInfo();
+		String consultationId = requestData.get("consultationId");
+		DBConsultation dbConsultation = consultationRepository.findByConsultationId(consultationId);
 		try {
-			dbUser = userRepository.findByMobileNumber(mobileNumber);
-			if (dbUser == null) {
+
+			if (dbConsultation == null) {
 				myDocAPIResponseInfo.setCode(ErrorConstant.BAD_REQUEST);
-				myDocAPIResponseInfo.setDescription("There is no account with that mobile Number : " + mobileNumber);
+				myDocAPIResponseInfo.setDescription("There is no record with that consultation Number");
 				myDocAPIResponseInfo.setData(null);
 				return new ResponseEntity<MyDocAPIResponseInfo>(myDocAPIResponseInfo, HttpStatus.BAD_REQUEST);
 			} else {
-				if (dbUser.getUserType().equals(UserType.doctor.toString())) {
-
-					consulations = consultationRepository.findByDoctorId(dbUser.getPracticeId());
-				} else {
-					consulations = consultationRepository.findByHealthWorkerId(dbUser.getPracticeId());
-				}
+				dbConsultation.setUpdatedDate(new Date());
 			}
 		} catch (Exception e) {
 			myDocAPIResponseInfo.setCode(5000);
@@ -337,20 +375,13 @@ public class UserController {
 			myDocAPIResponseInfo.setData(null);
 			return new ResponseEntity<MyDocAPIResponseInfo>(myDocAPIResponseInfo, HttpStatus.INTERNAL_SERVER_ERROR);
 		}
-
 		myDocAPIResponseInfo.setCode(0);
 		myDocAPIResponseInfo.setDescription("Success");
-		myDocAPIResponseInfo.setData(consulations);
+		myDocAPIResponseInfo.setData(dbConsultation);
 		return new ResponseEntity<MyDocAPIResponseInfo>(myDocAPIResponseInfo, HttpStatus.OK);
 	}
-	
-	
-	
-	
 
-	
 	private boolean userExist(String mobileNumber) {
-
 		return userRepository.findByMobileNumber(mobileNumber) != null;
 	}
 }

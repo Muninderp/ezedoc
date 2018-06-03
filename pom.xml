@@ -141,6 +141,11 @@
 			<artifactId>aws-java-sdk</artifactId>
 			<version>1.9.2</version>
 		</dependency>
+		<dependency>
+			<groupId>com.sun.jersey.contribs</groupId>
+			<artifactId>jersey-multipart</artifactId>
+			<version>1.19.4</version>
+		</dependency>
 	</dependencies>
 
 	<build>
