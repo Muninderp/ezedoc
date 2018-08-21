@@ -18,8 +18,6 @@ public class Patient {
 	private String mobileNumber;
 	private String location;
 	@NotNull
-	@NotEmpty
-	@Pattern(regexp = "\\d+")
 	private Integer age;
 	@NotNull
 	@NotEmpty

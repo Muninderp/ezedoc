@@ -28,6 +28,8 @@ public class ConsultationDetail {
 
 	private Date updatedDate;
 
+	private String notificationFlag;
+	
 	private DBPatient patient;
 
 	public String getConsultationId() {
@@ -92,6 +94,14 @@ public class ConsultationDetail {
 
 	public void setUpdatedDate(Date updatedDate) {
 		this.updatedDate = updatedDate;
+	}
+	
+	public String getNotificationFlag() {
+		return notificationFlag;
+	}
+
+	public void setNotificationFlag(String notificationFlag) {
+		this.notificationFlag = notificationFlag;
 	}
 
 	public DBPatient getPatient() {

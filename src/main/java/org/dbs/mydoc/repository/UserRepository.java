@@ -10,7 +10,11 @@ import org.springframework.stereotype.Repository;
 public interface UserRepository extends MongoRepository<DBUser, Integer> {
 
 	DBUser findByMobileNumber(String mobileNumber);
-	
+
 	List<DBUser> findBySpecialization(String specialization);
+
+	DBUser findByPracticeId(String practiceId);
+	
+	DBUser findByEmailId(String emailId);
 
 }

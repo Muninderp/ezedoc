@@ -65,6 +65,8 @@ public class PatientController {
 			dbPatient.setLastName(patient.getLastName());
 			dbPatient.setLocation(patient.getLocation());
 			dbPatient.setAddedBy(patient.getAddedBy());
+			dbPatient.setAge(patient.getAge());
+			dbPatient.setGender(patient.getGender());
 			dbPatient.setMobileNumber(patient.getMobileNumber());
 			patientRepository.save(dbPatient);
 		} catch (Exception e) {
@@ -109,6 +111,7 @@ public class PatientController {
 							dBConsultation.getDocumentUrl().add(s3Url);
 						}
 					}
+					dBConsultation.setNotificationFlag("Y");
 					consultationRepository.save(dBConsultation);
 				}
 			} catch (Exception e) {

@@ -29,6 +29,8 @@ public class DBConsultation {
 	
 	@DateTimeFormat(iso = ISO.DATE_TIME)
 	private Date updatedDate;
+	
+	private String notificationFlag; 
 
 	public String getConsultationId() {
 		return consultationId;
@@ -94,5 +96,13 @@ public class DBConsultation {
 		this.updatedDate = updatedDate;
 	}
 
-	
+	public String getNotificationFlag() {
+		return notificationFlag;
+	}
+
+	public void setNotificationFlag(String notificationFlag) {
+		this.notificationFlag = notificationFlag;
+	}
+
+		
 }
